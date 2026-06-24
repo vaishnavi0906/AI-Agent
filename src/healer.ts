@@ -10,11 +10,6 @@ export interface VisualHealResult {
   reasoning: string
 }
 
-/**
- * Visual healer — takes a screenshot of the current page and asks Claude
- * to identify what element the broken selector was targeting.
- * This is "video mode": Claude sees the page exactly as a human would.
- */
 export async function visualHeal(
   page: Page,
   brokenSelector: string,
@@ -27,27 +22,18 @@ export async function visualHeal(
     return null
   }
 
-  const prompt = `You are a Playwright test automation expert.
+  const prompt = `A Playwright test tried to perform "${action}" but this locator broke: "${brokenSelector}"
 
-A test is trying to perform the action "${action}" on an element but the locator broke.
-Broken selector: "${brokenSelector}"
+Look at the screenshot and find the element this selector was targeting.
 
-Look at this screenshot and find the element that best matches what "${brokenSelector}" was targeting.
-
-Return ONLY a JSON object (no markdown):
+Return ONLY a JSON object:
 {
-  "selector": "the best Playwright CSS selector or aria selector to target this element",
+  "selector": "best Playwright selector for this element",
   "confidence": 0.0 to 1.0,
-  "reasoning": "one sentence explanation"
+  "reasoning": "one sentence"
 }
 
-Prefer selectors in this order:
-1. [data-testid="..."]
-2. [aria-label="..."]
-3. role + accessible name e.g. button:has-text("Submit")
-4. input[name="..."] or input[type="..."][placeholder="..."]
-5. text selector e.g. text=Sign in
-6. CSS selector`
+Prefer: [data-testid] > [aria-label] > button:has-text() > input[name] > text= > CSS`
 
   try {
     const response = await client.messages.create({
@@ -58,11 +44,7 @@ Prefer selectors in this order:
         content: [
           {
             type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/png',
-              data: screenshot.toString('base64'),
-            },
+            source: { type: 'base64', media_type: 'image/png', data: screenshot.toString('base64') },
           },
           { type: 'text', text: prompt },
         ],
@@ -78,7 +60,6 @@ Prefer selectors in this order:
   }
 }
 
-// Singleton store shared across the patched session
 let _store: LocatorStore | null = null
 
 export function getStore(): LocatorStore {
