@@ -1,7 +1,5 @@
-export { test, expect } from './fixture.js'
-export { HealingEngine } from './healing/HealingEngine.js'
-export { HealingLocator, createHealingPage, heal } from './healing/HealingLocator.js'
-export { LocatorStore } from './healing/LocatorStore.js'
-export type { HealingEngineOptions, HealResult } from './healing/HealingEngine.js'
-export type { HealedRecord, LocatorType } from './healing/LocatorStore.js'
-export type { HealingFixtures, HealingWorkerFixtures } from './fixture.js'
+// Main entry — exports the patch installer and store
+export { installPatch } from './patch.js'
+export type { PatchOptions } from './patch.js'
+export { LocatorStore } from './store.js'
+export type { HealedEntry } from './store.js'

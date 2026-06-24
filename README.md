@@ -16,8 +16,8 @@ Tests keep running. No manual selector fixes needed.
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ai-test-engineer
-cd ai-test-engineer
+git clone https://github.com/vaishnavi0906/AI-Agent
+cd AI-Agent
 npm install
 npx playwright install chromium
 export ANTHROPIC_API_KEY=sk-ant-...

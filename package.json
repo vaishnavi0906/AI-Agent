@@ -1,20 +1,46 @@
 {
-  "name": "ai-test-engineer",
+  "name": "ai-self-heal-engine",
   "version": "1.0.0",
   "description": "Self-healing locator engine for Playwright with LLM-powered recovery",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./patch": "./dist/patch.js"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": [
+    "playwright",
+    "self-healing",
+    "test-automation",
+    "locator",
+    "ai",
+    "claude",
+    "llm"
+  ],
+  "author": "Vaishnavi Naga Gullapalli",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaishnavi0906/AI-Agent.git"
+  },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug",
-    "heal:report": "node dist/cli/report.js"
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "better-sqlite3": "^11.0.0"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
