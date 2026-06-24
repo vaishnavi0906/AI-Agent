@@ -1,0 +1,100 @@
+name: AI Test Engineer — Self-Healing Locators
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run nightly to catch upstream UI drift early
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Playwright + Self-Healing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Build TypeScript
+        run: npm run build
+
+      # Restore healing DB from cache so healed locators persist across runs
+      - name: Restore healing store
+        uses: actions/cache@v4
+        with:
+          path: .healing/
+          key: healing-store-${{ github.ref_name }}
+          restore-keys: |
+            healing-store-main
+            healing-store-
+
+      - name: Run tests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CI: 'true'
+        run: npm test
+
+      # Save updated healing DB
+      - name: Save healing store
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .healing/
+          key: healing-store-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload healing DB
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: healing-store-${{ github.run_id }}
+          path: .healing/
+          retention-days: 30
+
+      # On failure: open a GitHub Issue via the MCP GitHub integration
+      - name: File issue on test failure
+        if: failure() && github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPORT_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh issue create \
+            --title "🔴 Test failure — ${{ github.ref_name }} @ $(date -u '+%Y-%m-%d')" \
+            --body "Tests failed on \`${{ github.ref_name }}\`.
+
+**Run:** $REPORT_URL
+**Commit:** ${{ github.sha }}
+**Trigger:** ${{ github.event_name }}
+
+Check the Playwright report artifact for failure traces and screenshots.
+The self-healing engine may have new locator drift to review in the \`healing-store\` artifact." \
+            --label "bug,automated" \
+            || true  # don't fail if label doesn't exist
